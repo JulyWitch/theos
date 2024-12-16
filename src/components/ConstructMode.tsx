@@ -1,8 +1,11 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect } from 'react';
 import { constructHexBuffer } from '../utils/structParser';
 import type { StructField } from '../utils/types';
 import { FileUp } from 'lucide-react';
 import { CopyButton } from './CopyButton';
+import { useUrlState } from '../hooks/useUrlState';
+import { serializeValues, deserializeValues } from '../utils/urlHelpers';
+import { FieldInput } from './FieldInput';
 
 interface ConstructModeProps {
   fields: StructField[];
@@ -10,8 +13,13 @@ interface ConstructModeProps {
 }
 
 export function ConstructMode({ fields, isLittleEndian }: ConstructModeProps) {
-  const [values, setValues] = useState<Record<string, any>>({});
-  const [hexOutput, setHexOutput] = useState('');
+  const [values, setValues] = useUrlState<Record<string, any>>(
+    'values',
+    {},
+    serializeValues,
+    deserializeValues
+  );
+  const [hexOutput, setHexOutput] = useUrlState<string>('hexOutput', '');
 
   useEffect(() => {
     try {
@@ -22,42 +30,25 @@ export function ConstructMode({ fields, isLittleEndian }: ConstructModeProps) {
     } catch (error) {
       console.error('Failed to construct hex buffer:', error);
     }
-  }, [values, fields, isLittleEndian]);
+  }, [values, fields, isLittleEndian, setHexOutput]);
 
   const handleValueChange = (fieldName: string, value: string | boolean) => {
-    setValues((prev) => ({
-      ...prev,
+    setValues({
+      ...values,
       [fieldName]: typeof value === 'boolean' ? value : Number(value),
-    }));
+    });
   };
 
   return (
     <div className="space-y-6">
       <div className="grid gap-4">
         {fields.map((field) => (
-          <div key={field.name} className="space-y-2">
-            <label className="block text-sm font-medium text-gray-700">
-              {field.name} ({field.type})
-            </label>
-            {field.isBoolean ? (
-              <div className="flex items-center">
-                <input
-                  type="checkbox"
-                  className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
-                  onChange={(e) => handleValueChange(field.name, e.target.checked)}
-                />
-                <span className="ml-2 text-sm text-gray-600">
-                  {field.name}
-                </span>
-              </div>
-            ) : (
-              <input
-                type="number"
-                className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                onChange={(e) => handleValueChange(field.name, e.target.value)}
-              />
-            )}
-          </div>
+          <FieldInput
+            key={field.name}
+            field={field}
+            value={values[field.name]}
+            onChange={handleValueChange}
+          />
         ))}
       </div>
 

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { StructInput } from './components/StructInput';
 import { ModeToggle } from './components/ModeToggle';
 import { EndiannessToggle } from './components/EndiannessToggle';
@@ -7,14 +7,16 @@ import { ConstructMode } from './components/ConstructMode';
 import { parseStructDefinition } from './utils/structParser';
 import type { StructField } from './utils/structParser';
 import { Cpu } from 'lucide-react';
+import { useUrlState } from './hooks/useUrlState';
+import { serializeStructDef, deserializeStructDef } from './utils/urlHelpers';
 
 export default function App() {
-  const [structDef, setStructDef] = useState('');
-  const [mode, setMode] = useState<'parse' | 'construct'>('parse');
-  const [endianness, setEndianness] = useState<'little' | 'big'>('little');
-  const [fields, setFields] = useState<StructField[]>([]);
+  const [structDef, setStructDef] = useUrlState('struct', '', serializeStructDef, deserializeStructDef);
+  const [mode, setMode] = useUrlState<'parse' | 'construct'>('mode', 'parse');
+  const [endianness, setEndianness] = useUrlState<'little' | 'big'>('endianness', 'little');
+  const [fields, setFields] = React.useState<StructField[]>([]);
 
-  useEffect(() => {
+  React.useEffect(() => {
     if (structDef) {
       const parsedFields = parseStructDefinition(structDef);
       setFields(parsedFields);
@@ -39,23 +41,23 @@ export default function App() {
               <ModeToggle mode={mode} onModeChange={setMode} />
             </div>
             <div className="flex-1">
-              <EndiannessToggle 
-                endianness={endianness} 
-                onEndiannessChange={setEndianness} 
+              <EndiannessToggle
+                endianness={endianness}
+                onEndiannessChange={setEndianness}
               />
             </div>
           </div>
 
           <div className="bg-white rounded-lg shadow p-6">
             {mode === 'parse' ? (
-              <ParseMode 
-                fields={fields} 
-                isLittleEndian={endianness === 'little'} 
+              <ParseMode
+                fields={fields}
+                isLittleEndian={endianness === 'little'}
               />
             ) : (
-              <ConstructMode 
-                fields={fields} 
-                isLittleEndian={endianness === 'little'} 
+              <ConstructMode
+                fields={fields}
+                isLittleEndian={endianness === 'little'}
               />
             )}
           </div>
